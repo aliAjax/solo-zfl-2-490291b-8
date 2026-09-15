@@ -149,20 +149,55 @@ export function normalizeTags(tags: string[], defs: TagDef[]): string[] {
   return [...out].sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
 }
 
-/** 统计引用了某标签（主名或任一名别名）的记录数；locked 记录也算引用 */
+/**
+ * 统计引用了某标签的记录数。
+ * 按归一后的有效归属判断：记录持有目标标签的主名、别名，
+ * 或持有其下级标签（含下级的别名，归一会沿上级链经过目标），都视为引用。
+ * 锁定记录持有的标签同样计入。
+ */
 export function countReferences(
   defs: TagDef[],
   name: string,
   logs: Pick<KeyboardLog, 'soundTags'>[],
 ): number {
-  const def = defs.find((d) => d.name === name);
-  if (!def) return 0;
-  const tokens = new Set([def.name, ...def.aliases.map(cleanToken).filter(Boolean)]);
+  if (!defs.some((d) => d.name === name)) return 0;
+  const aliasMap = buildAliasMap(defs);
+  const parentOf = new Map<string, string | null>();
+  for (const def of defs) {
+    const n = cleanToken(def.name);
+    if (n) parentOf.set(n, cleanToken(def.parent) || null);
+  }
   let count = 0;
   for (const log of logs) {
-    if ((log.soundTags ?? []).some((t) => tokens.has(cleanToken(t)))) count++;
+    if (recordHoldsTag(log.soundTags ?? [], name, aliasMap, parentOf)) count++;
   }
   return count;
+}
+
+/** 记录是否有效持有目标标签：主名 / 别名 / 下级三条路径 */
+function recordHoldsTag(
+  tags: string[],
+  target: string,
+  aliasMap: Map<string, string>,
+  parentOf: Map<string, string | null>,
+): boolean {
+  for (const raw of tags) {
+    const token = cleanToken(raw);
+    if (!token) continue;
+    let cur = aliasMap.get(token) ?? token;
+    // 路径一、二：主名或别名直接命中
+    if (cur === target) return true;
+    // 路径三：持有下级标签，沿上级链向上经过目标
+    const walked = new Set<string>([cur]);
+    while (parentOf.has(cur)) {
+      const parent = parentOf.get(cur);
+      if (!parent || walked.has(parent)) break; // 防御：非法体系不死循环
+      if (parent === target) return true;
+      cur = parent;
+      walked.add(cur);
+    }
+  }
+  return false;
 }
 
 /**

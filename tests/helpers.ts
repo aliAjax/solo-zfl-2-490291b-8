@@ -20,6 +20,7 @@ declare global {
         tagDefs: SeedTagDef[];
         tagChanges: Array<{ type: string; summary: string; affectedRecords: number }>;
         mergeTags: (source: string, target: string) => TagActionResult;
+        removeTag: (name: string) => TagActionResult;
         updateTagDef: (
           name: string,
           patch: { aliases: string[]; parent: string | null },
