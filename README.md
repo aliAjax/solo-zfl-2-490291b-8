@@ -1,57 +1,31 @@
-# React + TypeScript + Vite
+# KeyFeeling · 键盘手感日志
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + TypeScript + Vite 的键盘手感记录应用，数据保存在浏览器 localStorage。
 
-Currently, two official plugins are available:
+## 功能
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- 记录键盘的轴体 / 键帽 / 结构 / 填充配置与手感评分
+- 列表查看、筛选（轴体类型 / 声音倾向 / 最低评分 / 关键词）、两两对比、统计概览
+- JSON 备份导入导出（重复 ID 支持跳过 / 覆盖 / 新 ID 策略）
 
-## Expanding the ESLint configuration
+## 标签体系与自动归一
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- **体系**：每个标签有主名、若干别名和可选上级；主名与别名全局唯一，层级不允许成环（新增 / 编辑 / 合并 / 导入时都会校验并说明原因）。
+- **归一**：编辑记录保存时，标签按别名归到主名、按下级归到最顶层上级；同一记录去重，输出排序固定，结果与输入顺序无关。
+- **合并**：源标签的引用、别名、下级全部迁到保留项，源标签随后移除，不留空标签；重复合并不产生变化（幂等）。
+- **有引用移除**：仍被记录引用的标签不能直接移除，会提示受影响记录数，需先合并到其他标签。
+- **锁定**：单条记录可锁定原始标签（详情弹窗中的锁按钮），锁定后跳过一切自动归一；解锁后恢复。
+- **备份**：导出文件（v2）携带标签体系、记录锁定状态和体系变更明细；非法体系在导入时被拦截并列出原因，v1 旧备份仍可正常导入。
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+## 开发
+
+```bash
+npm install
+npm run dev        # 开发服务器
+npm run check      # TypeScript 检查
+npm run lint       # ESLint
+npm run build      # 生产构建
+npm run test:e2e   # Playwright 浏览器测试（需先 npx playwright install chromium）
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config({
-  extends: [
-    // other configs...
-    // Enable lint rules for React
-    reactX.configs['recommended-typescript'],
-    // Enable lint rules for React DOM
-    reactDom.configs.recommended,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
+浏览器测试覆盖：归一、合并幂等、成环拦截、有引用移除、锁定跳过归一、非法导入拦截，以及查看 / 筛选 / 对比 / 统计回归。

@@ -45,8 +45,8 @@ export default function CompareView() {
     COMPARE_FIELDS.forEach((g) => {
       g.fields.forEach((f) => {
         total++;
-        const a = f.getter ? f.getter(logA) : f.key ? (logA as any)[f.key] : '';
-        const b = f.getter ? f.getter(logB) : f.key ? (logB as any)[f.key] : '';
+        const a = f.getter ? f.getter(logA) : f.key ? logA[f.key] : '';
+        const b = f.getter ? f.getter(logB) : f.key ? logB[f.key] : '';
         const arrA = Array.isArray(a);
         const arrB = Array.isArray(b);
         let equal: boolean;

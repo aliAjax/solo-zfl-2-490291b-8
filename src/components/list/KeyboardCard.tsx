@@ -1,4 +1,4 @@
-import { Pencil, Trash2, Eye } from 'lucide-react';
+import { Pencil, Trash2, Eye, Lock } from 'lucide-react';
 import type { KeyboardLog } from '@/types';
 import {
   SWITCH_TYPE_LABELS,
@@ -54,6 +54,12 @@ export default function KeyboardCard({ log, index }: Props) {
               <h3 className="font-mono text-base font-bold text-ink-100 truncate">
                 {log.name}
               </h3>
+              {log.tagsLocked && (
+                <Lock
+                  data-testid={`card-lock-${log.id}`}
+                  className="h-3 w-3 shrink-0 text-brass-300/80"
+                />
+              )}
             </div>
             <p className="text-xs text-ink-500 truncate">
               {log.brand} {log.model} · {formatDate(log.purchaseDate)}

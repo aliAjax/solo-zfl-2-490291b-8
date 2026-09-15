@@ -5,6 +5,7 @@ import StatsView from '@/components/stats/StatsView';
 import FormModal from '@/components/form/FormModal';
 import DetailModal from '@/components/detail/DetailModal';
 import ImportExportModal from '@/components/importExport/ImportExportModal';
+import TagManagerModal from '@/components/tags/TagManagerModal';
 import { useAppStore } from '@/store/useAppStore';
 import { GitCompare } from 'lucide-react';
 
@@ -91,6 +92,7 @@ export default function Home() {
       <FormModal />
       <DetailModal />
       <ImportExportModal />
+      <TagManagerModal />
     </div>
   );
 }

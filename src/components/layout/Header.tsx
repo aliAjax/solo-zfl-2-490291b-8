@@ -1,8 +1,8 @@
-import { Keyboard, Plus, GitCompare, List, BarChart3, HardDrive } from 'lucide-react';
+import { Keyboard, Plus, GitCompare, List, BarChart3, HardDrive, Tags } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 
 export default function Header() {
-  const { ui, openFormModal, setViewMode, clearCompareSelect, openImportExport } = useAppStore();
+  const { ui, openFormModal, setViewMode, clearCompareSelect, openImportExport, openTagManager } = useAppStore();
   const { viewMode, selectedForCompare } = ui;
 
   const compareCount = selectedForCompare.length;
@@ -77,6 +77,15 @@ export default function Header() {
               <span className="hidden sm:inline">统计</span>
             </button>
           </div>
+
+          <button
+            onClick={openTagManager}
+            data-testid="open-tag-manager"
+            className="p-2 rounded-lg text-ink-400 hover:text-brass-200 hover:bg-brass-300/10 transition-colors"
+            title="标签体系管理"
+          >
+            <Tags className="h-4 w-4" />
+          </button>
 
           <button
             onClick={openImportExport}

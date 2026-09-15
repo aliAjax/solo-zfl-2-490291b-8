@@ -1,12 +1,12 @@
 import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Pencil, Trash2, Calendar } from 'lucide-react';
+import { X, Pencil, Trash2, Calendar, Lock, LockOpen } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { SWITCH_TYPE_LABELS, SOUND_CHARACTER_LABELS } from '@/types';
 import { getRatingGradient, formatDate } from '@/utils/helpers';
 
 export default function DetailModal() {
-  const { ui, closeDetail, openFormModal, deleteLog } = useAppStore();
+  const { ui, closeDetail, openFormModal, deleteLog, toggleTagLock } = useAppStore();
   const log = ui.detailLog;
 
   useEffect(() => {
@@ -72,6 +72,18 @@ export default function DetailModal() {
             </p>
           </div>
           <div className="flex items-center gap-1">
+            <button
+              onClick={() => toggleTagLock(log.id)}
+              data-testid="toggle-tag-lock"
+              className={`p-2 rounded-lg transition-colors ${
+                log.tagsLocked
+                  ? 'text-brass-200 bg-brass-300/15 hover:bg-brass-300/25'
+                  : 'text-ink-400 hover:text-brass-200 hover:bg-brass-300/10'
+              }`}
+              title={log.tagsLocked ? '解锁标签（恢复自动归一）' : '锁定标签（跳过自动归一）'}
+            >
+              {log.tagsLocked ? <Lock className="h-4 w-4" /> : <LockOpen className="h-4 w-4" />}
+            </button>
             <button
               onClick={() => openFormModal(log)}
               className="p-2 rounded-lg text-ink-400 hover:text-moss-400 hover:bg-moss-500/10 transition-colors"
@@ -160,6 +172,15 @@ export default function DetailModal() {
                 <h3 className="font-mono text-sm font-semibold text-brass-200 flex items-center gap-2">
                   <span className="w-1 h-4 rounded bg-brass-300" />
                   声音描述
+                  {log.tagsLocked && (
+                    <span
+                      data-testid="tag-lock-badge"
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono bg-brass-300/15 text-brass-200 border border-brass-300/30"
+                    >
+                      <Lock className="h-3 w-3" />
+                      已锁定 · 跳过归一
+                    </span>
+                  )}
                 </h3>
                 <div className="flex flex-wrap gap-2">
                   {log.soundTags.map((t) => (

@@ -1,4 +1,4 @@
-import type { KeyboardLog } from '@/types';
+import type { KeyboardLog, TagChange, TagDef } from '@/types';
 import {
   SWITCH_TYPES,
   SOUND_CHARACTERS,
@@ -7,8 +7,9 @@ import {
   PLATE_MATERIALS,
   CASE_MATERIALS,
 } from '@/types';
+import { parseTagDefs } from '@/utils/tagSystem';
 
-export const EXPORT_FORMAT_VERSION = 1;
+export const EXPORT_FORMAT_VERSION = 2;
 export const EXPORT_FORMAT_MAGIC = 'keyfeeling-export';
 
 export type DuplicateStrategy = 'skip' | 'overwrite' | 'regenerate';
@@ -19,6 +20,10 @@ export interface ExportEnvelope {
   exportedAt: string;
   recordCount: number;
   data: KeyboardLog[];
+  /** v2 起携带：标签体系（含主名/别名/上级） */
+  tagSystem?: TagDef[];
+  /** v2 起携带：标签体系变更明细 */
+  tagChanges?: TagChange[];
 }
 
 export interface ImportParseResult {
@@ -27,6 +32,9 @@ export interface ImportParseResult {
   fileInternalDuplicates: Array<{ index: number; id: string; raw: unknown }>;
   totalParsed: number;
   envelope?: ExportEnvelope;
+  /** 备份中携带的合法标签体系（v2）；v1 备份没有该字段 */
+  tagSystem?: TagDef[];
+  tagChanges?: TagChange[];
 }
 
 export interface ImportApplyResult {
@@ -204,6 +212,22 @@ export function parseImportData(rawJson: string, existingIds: string[]): ImportP
     throw new Error('JSON 根节点必须是数组或有效的 KeyFeeling 导出格式');
   }
 
+  // 备份携带的标签体系：非法体系直接拦截并说明原因；v1 旧备份没有该字段，跳过即可
+  let tagSystem: TagDef[] | undefined;
+  let tagChanges: TagChange[] | undefined;
+  if (envelope && envelope.tagSystem !== undefined) {
+    const { defs, errors } = parseTagDefs(envelope.tagSystem);
+    if (errors.length > 0) {
+      throw new Error(
+        '备份中的标签体系不合法，已拦截导入：\n' + errors.map((e) => `· ${e}`).join('\n'),
+      );
+    }
+    tagSystem = defs;
+  }
+  if (envelope && Array.isArray(envelope.tagChanges)) {
+    tagChanges = envelope.tagChanges.filter(isValidTagChange);
+  }
+
   const fileValidLogs: KeyboardLog[] = [];
   const fileInvalidItems: Array<{ index: number; reason: string; raw: unknown }> = [];
   const fileInternalDuplicates: Array<{ index: number; id: string; raw: unknown }> = [];
@@ -217,6 +241,8 @@ export function parseImportData(rawJson: string, existingIds: string[]): ImportP
     }
 
     const log = item as KeyboardLog;
+    // 锁定标记只认布尔值，缺省视为未锁定（兼容 v1 旧备份）
+    log.tagsLocked = log.tagsLocked === true;
 
     if (seenIds.has(log.id)) {
       fileInternalDuplicates.push({ index, id: log.id, raw: item });
@@ -235,7 +261,21 @@ export function parseImportData(rawJson: string, existingIds: string[]): ImportP
     fileInternalDuplicates,
     totalParsed: rawArray.length,
     envelope,
+    tagSystem,
+    tagChanges,
   };
+}
+
+function isValidTagChange(raw: unknown): raw is TagChange {
+  if (typeof raw !== 'object' || raw === null) return false;
+  const o = raw as Record<string, unknown>;
+  return (
+    typeof o.id === 'string' &&
+    typeof o.at === 'string' &&
+    typeof o.type === 'string' &&
+    typeof o.summary === 'string' &&
+    typeof o.affectedRecords === 'number'
+  );
 }
 
 export function buildValidatedLogs(
@@ -352,18 +392,28 @@ export function applyImport(
   };
 }
 
-export function buildExportEnvelope(logs: KeyboardLog[]): ExportEnvelope {
+export function buildExportEnvelope(
+  logs: KeyboardLog[],
+  tagSystem: TagDef[] = [],
+  tagChanges: TagChange[] = [],
+): ExportEnvelope {
   return {
     format: EXPORT_FORMAT_MAGIC,
     version: EXPORT_FORMAT_VERSION,
     exportedAt: new Date().toISOString(),
     recordCount: logs.length,
     data: logs,
+    tagSystem,
+    tagChanges,
   };
 }
 
-export function exportToJson(logs: KeyboardLog[]): string {
-  return JSON.stringify(buildExportEnvelope(logs), null, 2);
+export function exportToJson(
+  logs: KeyboardLog[],
+  tagSystem: TagDef[] = [],
+  tagChanges: TagChange[] = [],
+): string {
+  return JSON.stringify(buildExportEnvelope(logs, tagSystem, tagChanges), null, 2);
 }
 
 export function downloadJsonFile(content: string, filename: string): void {

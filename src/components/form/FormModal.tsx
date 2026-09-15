@@ -79,6 +79,7 @@ export default function FormModal() {
           caseMaterial: editing.caseMaterial,
           soundCharacter: editing.soundCharacter,
           soundTags: [...editing.soundTags],
+          tagsLocked: editing.tagsLocked,
           reboundRating: editing.reboundRating,
           tactilityRating: editing.tactilityRating,
           fatigueRating: editing.fatigueRating,
@@ -385,6 +386,18 @@ export default function FormModal() {
                   presetSuggestions={PRESET_SOUND_TAGS}
                   placeholder="描述一下敲起来的感觉..."
                 />
+                {editing?.tagsLocked ? (
+                  <p
+                    data-testid="form-lock-hint"
+                    className="text-[11px] text-brass-200/80 mt-1.5 flex items-center gap-1"
+                  >
+                    🔒 该记录已锁定标签：保存后保持原标签，不会自动归一
+                  </p>
+                ) : (
+                  <p className="text-[11px] text-ink-500 mt-1.5">
+                    保存时标签会自动归一：别名归到主名、下级归到上级
+                  </p>
+                )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">

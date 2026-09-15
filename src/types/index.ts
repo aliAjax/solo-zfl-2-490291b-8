@@ -24,12 +24,30 @@ export interface KeyboardLog {
   caseMaterial: CaseMaterial;
   soundCharacter: SoundCharacter;
   soundTags: string[];
+  /** 锁定后该记录的标签保持原样，跳过一切自动归一（编辑保存 / 合并迁移 / 导入归一） */
+  tagsLocked?: boolean;
   reboundRating: number;
   tactilityRating: number;
   fatigueRating: number;
   notes: string;
   createdAt: string;
   updatedAt: string;
+}
+
+/** 标签体系中的一个标签：主名 + 别名 + 可选上级（上级为主名） */
+export interface TagDef {
+  name: string;
+  aliases: string[];
+  parent: string | null;
+}
+
+/** 标签体系变更明细（合并 / 移除 / 新增 / 编辑 / 导入） */
+export interface TagChange {
+  id: string;
+  at: string;
+  type: 'create' | 'update' | 'merge' | 'remove' | 'import';
+  summary: string;
+  affectedRecords: number;
 }
 
 export interface FilterState {
@@ -48,6 +66,7 @@ export interface UIState {
   editingLog: KeyboardLog | null;
   detailLog: KeyboardLog | null;
   importExportModalOpen: boolean;
+  tagManagerOpen: boolean;
 }
 
 export const SWITCH_TYPE_LABELS: Record<SwitchType, string> = {

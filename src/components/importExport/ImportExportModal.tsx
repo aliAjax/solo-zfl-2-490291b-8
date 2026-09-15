@@ -230,7 +230,7 @@ function StatCard({
 }
 
 export default function ImportExportModal() {
-  const { ui, closeImportExport, logs, importLogs } = useAppStore();
+  const { ui, closeImportExport, logs, importLogs, tagDefs, tagChanges } = useAppStore();
   const filteredLogs = useFilteredLogs();
 
   const [activeTab, setActiveTab] = useState<'export' | 'import'>('export');
@@ -288,9 +288,9 @@ export default function ImportExportModal() {
 
   const handleExport = useCallback(() => {
     const source = exportScope === 'all' ? logs : filteredLogs;
-    const json = exportToJson(source);
+    const json = exportToJson(source, tagDefs, tagChanges);
     downloadJsonFile(json, generateExportFilename());
-  }, [logs, filteredLogs, exportScope]);
+  }, [logs, filteredLogs, exportScope, tagDefs, tagChanges]);
 
   const handleFileSelect = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -329,11 +329,15 @@ export default function ImportExportModal() {
     if (checkedIds.size === 0 || !parseResult) return;
 
     const selectedIds = Array.from(checkedIds);
+    const tagPayload = parseResult.tagSystem
+      ? { defs: parseResult.tagSystem, changes: parseResult.tagChanges ?? [] }
+      : null;
     const result = importLogs(
       selectedIds,
       parseResult.fileValidLogs,
       validated.duplicateWithExisting,
       strategy,
+      tagPayload,
     );
     setApplyResult(result);
     setParseResult(null);
@@ -434,7 +438,7 @@ export default function ImportExportModal() {
                 格式: {EXPORT_FORMAT_MAGIC}
               </span>
               <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-ink-800 border border-ink-700/60 text-ink-400">
-                包含: meta + data
+                包含: meta + data + 标签体系 + 变更明细
               </span>
             </div>
           </div>
@@ -515,7 +519,7 @@ export default function ImportExportModal() {
     return (
       <div className="space-y-4 animate-fadeIn">
         {parseResult.envelope && (
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slateblue-500/10 border border-slateblue-500/25 text-[11px] font-mono">
+          <div className="flex items-center flex-wrap gap-2 px-3 py-2 rounded-lg bg-slateblue-500/10 border border-slateblue-500/25 text-[11px] font-mono">
             <Shield className="h-3.5 w-3.5 text-slateblue-300 shrink-0" />
             <span className="text-slateblue-300">
               KeyFeeling 导出文件 v{parseResult.envelope.version}
@@ -524,6 +528,14 @@ export default function ImportExportModal() {
             <span className="text-ink-400">
               {formatDate(parseResult.envelope.exportedAt)} 导出
             </span>
+            {parseResult.tagSystem && (
+              <>
+                <span className="text-ink-500">·</span>
+                <span className="text-brass-200" data-testid="import-tag-system-badge">
+                  含标签体系 {parseResult.tagSystem.length} 个标签
+                </span>
+              </>
+            )}
           </div>
         )}
 
@@ -811,14 +823,14 @@ export default function ImportExportModal() {
                   </div>
 
                   {importError && (
-                    <div className="rounded-lg bg-wine-500/10 border border-wine-500/30 p-4">
+                    <div className="rounded-lg bg-wine-500/10 border border-wine-500/30 p-4" data-testid="import-error">
                       <div className="flex items-start gap-2">
                         <AlertTriangle className="h-4 w-4 text-wine-400 shrink-0 mt-0.5" />
                         <div>
                           <p className="text-xs font-semibold text-wine-300 mb-1">
                             解析失败
                           </p>
-                          <p className="text-xs text-ink-400">{importError}</p>
+                          <p className="text-xs text-ink-400 whitespace-pre-wrap">{importError}</p>
                         </div>
                       </div>
                     </div>

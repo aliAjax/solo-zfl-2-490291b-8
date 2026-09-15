@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
-import { useAppStore } from '@/store/useAppStore';
 import { SWITCH_TYPE_LABELS, SOUND_CHARACTER_LABELS, type KeyboardLog } from '@/types';
 
 interface Props {
